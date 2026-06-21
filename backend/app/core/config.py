@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # ── App ───────────────────────────────────────────────────────────────────
     APP_NAME: str = "Factory Management System"
     DEBUG: bool = False
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: list[str] = ["*"]
     TRUSTED_HOSTS: list[str] = ["*"]
 
     def __init__(self, **values):
