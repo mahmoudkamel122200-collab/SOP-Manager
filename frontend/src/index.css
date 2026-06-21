@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+@theme {
+  /* Primary teal/cyan — pharmaceutical clean */
+  --color-pharmacy-50:  #f0fdfa;
+  --color-pharmacy-100: #ccfbf1;
+  --color-pharmacy-200: #99f6e4;
+  --color-pharmacy-300: #5eead4;
+  --color-pharmacy-400: #2dd4bf;
+  --color-pharmacy-500: #14b8a6;
+  --color-pharmacy-600: #0d9488;
+  --color-pharmacy-700: #0f766e;
+  --color-pharmacy-800: #115e59;
+  --color-pharmacy-900: #134e4a;
+
+  /* Surface */
+  --color-lab-light: #f8fafc;
+  --color-lab-dark:  #0f172a;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-lab-light);
+    color: #1e293b;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ── Utilities ──────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Glassmorphism panel */
+  .glass-panel {
+    @apply bg-white/75 backdrop-blur-xl border border-white/50 shadow-xl shadow-slate-200/60;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-pharmacy-600 to-cyan-500;
+  }
+
+  /* Card hover lift */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Active nav item */
+  .nav-active {
+    @apply bg-pharmacy-500 text-white shadow-md;
+  }
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Background animated blobs ─────────────────────────────────────────────── */
+.bg-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: drift 20s ease-in-out infinite alternate;
+}
+.bg-blob-1 {
+  width: 600px; height: 600px;
+  top: -200px; right: -200px;
+  background: radial-gradient(circle, rgba(20,184,166,.12), transparent 70%);
+}
+.bg-blob-2 {
+  width: 500px; height: 500px;
+  bottom: -150px; left: -150px;
+  background: radial-gradient(circle, rgba(59,130,246,.10), transparent 70%);
+  animation-delay: -10s;
+}
+@keyframes drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(40px, 30px) scale(1.05); }
+}
