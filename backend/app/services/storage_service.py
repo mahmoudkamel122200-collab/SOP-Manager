@@ -195,14 +195,18 @@ class SupabaseStorageBackend(StorageBackend):
         # Relative path stored in DB: "production/filename.pdf"
         relative = f"{section_slug}/{filename}"
 
-        # Supabase Storage client is currently synchronous/blocking, so we run it in a thread if we want true async, 
-        # but for Vercel Serverless it's fine.
         mime = MIME_MAP.get(extension.lower(), "application/octet-stream")
-        self.client.storage.from_(self.bucket).upload(
-            path=relative,
-            file=content,
-            file_options={"content-type": mime}
-        )
+        try:
+            self.client.storage.from_(self.bucket).upload(
+                path=relative,
+                file=content,
+                file_options={"content-type": mime}
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload to Supabase Storage: {str(e)}. Please ensure the '{self.bucket}' bucket exists and is public."
+            )
 
         return relative, filename
 
