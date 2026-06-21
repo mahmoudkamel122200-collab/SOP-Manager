@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Package, MapPin, Loader2, Search, Plus, PlusCircle, Factory, X, Check, AlertCircle } from 'lucide-react';
+import { Package, MapPin, Loader2, Search, Plus, X, Check, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
 export const AdminWarehouse: React.FC = () => {

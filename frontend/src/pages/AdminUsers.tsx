@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Plus, Trash2, Loader2, ShieldAlert,
-  Check, AlertCircle, X, UserPlus, Key, Mail, Shield, Building, ChevronRight, Lock
+  Check, AlertCircle, X, UserPlus, Key, Mail, Shield, Building, Lock
 } from 'lucide-react';
 import api from '../services/api';
 

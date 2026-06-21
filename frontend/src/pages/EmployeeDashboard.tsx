@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, ExternalLink, Search, Package, MapPin, ArrowRightLeft,
+  FileText, ExternalLink, Search, MapPin, ArrowRightLeft,
   Loader2, CheckCircle, XCircle, Printer
 } from 'lucide-react';
 import api from '../services/api';

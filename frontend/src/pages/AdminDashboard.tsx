@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 
 export const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  useAuth();
   const [stats, setStats] = useState({ users: 0, items: 0, logs: 0 });
 
   useEffect(() => {
