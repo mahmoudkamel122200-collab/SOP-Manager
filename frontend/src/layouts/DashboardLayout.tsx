@@ -27,7 +27,7 @@ export const DashboardLayout: React.FC<{ allowedRole?: 'ADMIN' | 'EMPLOYEE' }> =
   }
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-slate-50 relative">
+    <div className="min-h-screen flex overflow-hidden relative bg-transparent">
       {/* Background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-pharmacy-50/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>

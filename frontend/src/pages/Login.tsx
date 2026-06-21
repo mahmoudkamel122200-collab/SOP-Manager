@@ -165,7 +165,7 @@ export const Login: React.FC = () => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-teal-50/20 to-blue-50/30 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-transparent">
       {/* Ambient blobs */}
       <div className="bg-blob bg-blob-1" />
       <div className="bg-blob bg-blob-2" />

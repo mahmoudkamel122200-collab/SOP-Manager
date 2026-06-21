@@ -65,7 +65,7 @@ export const AdminDocuments: React.FC = () => {
       if (fileRef.current) fileRef.current.value = '';
       fetchData();
     } catch (e: any) {
-      alert(e.response?.data?.detail || e.message || 'Upload failed.');
+      alert(e.response?.data?.message || e.response?.data?.detail || e.message || 'Upload failed.');
     } finally {
       setUploading(false);
     }
