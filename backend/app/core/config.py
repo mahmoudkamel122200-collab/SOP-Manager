@@ -39,7 +39,11 @@ class Settings(BaseSettings):
     # ── App ───────────────────────────────────────────────────────────────────
     APP_NAME: str = "Factory Management System"
     DEBUG: bool = False
-    ALLOWED_ORIGINS: list[str] = ["*"]
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://sop-manager-p8kt.vercel.app"
+    ]
     TRUSTED_HOSTS: list[str] = ["*"]
 
     def __init__(self, **values):
