@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   Loader2,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -59,6 +61,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // ── Step 1: Role click ─────────────────────────────────────────────────────
   const handleRoleClick = (r: 'ADMIN' | 'EMPLOYEE') => {
@@ -319,16 +322,25 @@ export const Login: React.FC = () => {
                   <label className="block text-sm font-semibold text-slate-600 mb-1.5">
                     Password
                   </label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-pharmacy-500 focus:ring-2 focus:ring-pharmacy-500/20 outline-none transition-all text-slate-800"
-                  />
+                  <div className="relative">
+                    <input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-pharmacy-500 focus:ring-2 focus:ring-pharmacy-500/20 outline-none transition-all text-slate-800 pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
 
                 <button
