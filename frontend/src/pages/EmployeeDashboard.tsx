@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, ExternalLink, Search, MapPin, ArrowRightLeft,
@@ -6,6 +6,83 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+
+const SearchableSelect = ({ value, onChange, options, placeholder, label }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filtered = options.filter((o: any) => 
+    o.label.toLowerCase().includes(search.toLowerCase()) || 
+    o.value.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selected = options.find((o: any) => o.value === value);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="block text-sm font-medium text-slate-600 mb-1">{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl bg-slate-50 hover:bg-white flex justify-between items-center cursor-pointer hover:border-purple-500 transition-colors"
+      >
+        <span className={selected ? 'text-slate-800 font-mono font-medium' : 'text-slate-400'}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <svg className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+      </div>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -5 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+          >
+            <div className="p-2 border-b border-slate-100 bg-slate-50">
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 text-sm font-mono"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="max-h-56 overflow-y-auto custom-scrollbar">
+              {filtered.length === 0 ? (
+                <div className="p-4 text-sm text-slate-500 text-center">No results found</div>
+              ) : (
+                filtered.map((o: any) => (
+                  <div 
+                    key={o.value} 
+                    onClick={() => { onChange(o.value); setIsOpen(false); setSearch(''); }}
+                    className="px-4 py-2.5 hover:bg-purple-50 cursor-pointer text-sm font-mono text-slate-700 flex flex-col border-b border-slate-50 last:border-0"
+                  >
+                    <span className="font-semibold text-slate-800">{o.value}</span>
+                    {o.subLabel && <span className="text-xs text-slate-500 font-sans mt-0.5">{o.subLabel}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const EmployeeDashboard: React.FC = () => {
   const { user, section } = useAuth();
@@ -251,23 +328,31 @@ export const EmployeeDashboard: React.FC = () => {
                 <h2 className="font-bold text-slate-800 text-lg">Move Item</h2>
               </div>
               <form onSubmit={handleMove} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Item Code</label>
-                   <input type="text" list="item-codes" value={moveItemCode} onChange={e => setMoveItemCode(e.target.value)} placeholder="BG-000123" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required autoComplete="off" />
-                   <datalist id="item-codes">
-                     {allItems.map(item => (
-                       <option key={item.id} value={item.item_code}>{item.material_name || ''}</option>
-                     ))}
-                   </datalist>
+                 <div className="relative">
+                   <SearchableSelect 
+                     label="Item Code"
+                     placeholder="Select or search item..."
+                     value={moveItemCode}
+                     onChange={setMoveItemCode}
+                     options={allItems.map(item => ({
+                       value: item.item_code,
+                       label: item.item_code,
+                       subLabel: item.material_name || 'Unknown Material'
+                     }))}
+                   />
                  </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">New Location Code</label>
-                   <input type="text" list="location-codes" value={moveLocationCode} onChange={e => setMoveLocationCode(e.target.value)} placeholder="A-R02-S01-P02" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required autoComplete="off" />
-                   <datalist id="location-codes">
-                     {allLocations.map(loc => (
-                       <option key={loc.id} value={loc.location_code} />
-                     ))}
-                   </datalist>
+                 <div className="relative">
+                   <SearchableSelect 
+                     label="New Location Code"
+                     placeholder="Select or search location..."
+                     value={moveLocationCode}
+                     onChange={setMoveLocationCode}
+                     options={allLocations.map(loc => ({
+                       value: loc.location_code,
+                       label: loc.location_code,
+                       subLabel: `${loc.warehouse_name} (R${loc.rack} S${loc.shelf} P${loc.position})`
+                     }))}
+                   />
                  </div>
                  <div className="md:col-span-2">
                    <button disabled={moveLoading} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors flex justify-center items-center gap-2 shadow-md disabled:opacity-60">
