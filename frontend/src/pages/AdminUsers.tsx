@@ -296,7 +296,7 @@ export const AdminUsers: React.FC = () => {
                       className="w-full pl-11 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-pharmacy-500 transition-colors bg-white appearance-none"
                       required
                     >
-                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      {roles.filter(r => ['ADMIN', 'EMPLOYEE'].includes(r.name)).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -307,23 +307,13 @@ export const AdminUsers: React.FC = () => {
                 <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                   <Building className="w-4 h-4 text-slate-400" /> Optional: Assign Initial Section
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <select
                     value={formData.section_id} onChange={e => setFormData({ ...formData, section_id: e.target.value })}
                     className="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-pharmacy-500 transition-colors bg-white"
                   >
                     <option value="">-- No Section --</option>
                     {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                  
-                  <select
-                    value={formData.permission_level} onChange={e => setFormData({ ...formData, permission_level: e.target.value })}
-                    disabled={!formData.section_id}
-                    className="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-pharmacy-500 transition-colors bg-white disabled:bg-slate-50 disabled:text-slate-400"
-                  >
-                    <option value="READ">Read Only</option>
-                    <option value="WRITE">Read & Write</option>
-                    <option value="ADMIN">Section Admin</option>
                   </select>
                 </div>
               </div>
@@ -390,7 +380,7 @@ export const AdminUsers: React.FC = () => {
             {/* Grant New Access */}
             <form onSubmit={handleAssign} className="pt-5 border-t border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">Grant New Access</h3>
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-1 gap-3 mb-4">
                 <select
                   value={assignData.section_id} onChange={e => setAssignData({ ...assignData, section_id: e.target.value })}
                   className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:border-pharmacy-500 transition-colors bg-white"
@@ -400,15 +390,6 @@ export const AdminUsers: React.FC = () => {
                   {sections.filter(s => !userSections.some(us => us.section_name === s.name)).map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
-                </select>
-                
-                <select
-                  value={assignData.permission_level} onChange={e => setAssignData({ ...assignData, permission_level: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:border-pharmacy-500 transition-colors bg-white"
-                >
-                  <option value="READ">Read Only</option>
-                  <option value="WRITE">Read & Write</option>
-                  <option value="ADMIN">Section Admin</option>
                 </select>
               </div>
 
