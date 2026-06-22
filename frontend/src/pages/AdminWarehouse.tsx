@@ -16,7 +16,7 @@ export const AdminWarehouse: React.FC = () => {
   const [itemCode, setItemCode] = useState('');
   const [materialName, setMaterialName] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState('units');
+  const [unit, setUnit] = useState('KG');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [itemLoading, setItemLoading] = useState(false);
   const [itemError, setItemError] = useState('');
@@ -249,7 +249,15 @@ export const AdminWarehouse: React.FC = () => {
                 </div>
                 <div className="w-1/3">
                    <label className="block text-sm font-semibold mb-1.5 text-slate-700">Unit</label>
-                   <input type="text" required value={unit} onChange={e => setUnit(e.target.value)} className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500" />
+                   <select required value={unit} onChange={e => setUnit(e.target.value)} className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500 bg-white">
+                     <option value="KG">KG</option>
+                     <option value="L">Liters (L)</option>
+                     <option value="PCS">Pieces (PCS)</option>
+                     <option value="units">Units</option>
+                     <option value="boxes">Boxes</option>
+                     <option value="pallets">Pallets</option>
+                     <option value="packs">Packs</option>
+                   </select>
                 </div>
               </div>
               <div>
