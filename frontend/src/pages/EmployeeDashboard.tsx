@@ -118,8 +118,8 @@ export const EmployeeDashboard: React.FC = () => {
     
     // Fetch all items and locations for searchable dropdowns
     if (section?.permission_level === 'WRITE' || section?.permission_level === 'ADMIN' || user?.role === 'ADMIN') {
-      api.get('/warehouse/items').then(res => setAllItems(res.data?.data || []));
-      api.get('/warehouse/locations').then(res => setAllLocations(res.data?.data || []));
+      api.get('/warehouse/items?page_size=1000').then(res => setAllItems(res.data?.data || []));
+      api.get('/warehouse/locations?page_size=1000').then(res => setAllLocations(res.data?.data || []));
     }
   }, [section, user]);
 

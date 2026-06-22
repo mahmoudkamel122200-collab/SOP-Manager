@@ -98,12 +98,11 @@ async def create_location(
 # ITEM / BAG MANAGEMENT (Feature 2)
 # =============================================================================
 
-@router.get("/items")
+@router.get("/items", dependencies=[_read])
 async def list_items(
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page_size: int = Query(500, ge=1, le=1000),
     status_filter: str | None = Query(None, alias="status"),
-    token_payload: dict = Depends(require_role("ADMIN")),
     db: AsyncSession = Depends(get_db),
 ):
     items, total = await WarehouseService(db).list_items(page=page, page_size=page_size, status_filter=status_filter)
