@@ -26,6 +26,7 @@ class AuditActionEnum(str, enum.Enum):
     DELETE           = "DELETE"
     UPLOAD_DOCUMENT  = "UPLOAD_DOCUMENT"
     OPEN_DOCUMENT    = "OPEN_DOCUMENT"
+    UPDATE_DOCUMENT  = "UPDATE_DOCUMENT"
     ARCHIVE_DOCUMENT = "ARCHIVE_DOCUMENT"
     MOVE_ITEM        = "MOVE_ITEM"
     ADD_ITEM         = "ADD_ITEM"
