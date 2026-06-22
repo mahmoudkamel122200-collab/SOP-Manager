@@ -26,6 +26,10 @@ export const EmployeeDashboard: React.FC = () => {
   const [moveLoading, setMoveLoading] = useState(false);
   const [moveMessage, setMoveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // --- Move Item Search Data ---
+  const [allItems, setAllItems] = useState<any[]>([]);
+  const [allLocations, setAllLocations] = useState<any[]>([]);
+
   useEffect(() => {
     if (section?.id) {
       setDocsLoading(true);
@@ -34,7 +38,13 @@ export const EmployeeDashboard: React.FC = () => {
         .catch(() => setDocuments([]))
         .finally(() => setDocsLoading(false));
     }
-  }, [section]);
+    
+    // Fetch all items and locations for searchable dropdowns
+    if (section?.permission_level === 'WRITE' || section?.permission_level === 'ADMIN' || user?.role === 'ADMIN') {
+      api.get('/warehouse/items').then(res => setAllItems(res.data?.data || []));
+      api.get('/warehouse/locations').then(res => setAllLocations(res.data?.data || []));
+    }
+  }, [section, user]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,11 +253,21 @@ export const EmployeeDashboard: React.FC = () => {
               <form onSubmit={handleMove} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
                    <label className="block text-sm font-medium text-slate-600 mb-1">Item Code</label>
-                   <input type="text" value={moveItemCode} onChange={e => setMoveItemCode(e.target.value)} placeholder="BG-000123" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required />
+                   <input type="text" list="item-codes" value={moveItemCode} onChange={e => setMoveItemCode(e.target.value)} placeholder="BG-000123" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required autoComplete="off" />
+                   <datalist id="item-codes">
+                     {allItems.map(item => (
+                       <option key={item.id} value={item.item_code}>{item.material_name || ''}</option>
+                     ))}
+                   </datalist>
                  </div>
                  <div>
                    <label className="block text-sm font-medium text-slate-600 mb-1">New Location Code</label>
-                   <input type="text" value={moveLocationCode} onChange={e => setMoveLocationCode(e.target.value)} placeholder="A-R02-S01-P02" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required />
+                   <input type="text" list="location-codes" value={moveLocationCode} onChange={e => setMoveLocationCode(e.target.value)} placeholder="A-R02-S01-P02" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required autoComplete="off" />
+                   <datalist id="location-codes">
+                     {allLocations.map(loc => (
+                       <option key={loc.id} value={loc.location_code} />
+                     ))}
+                   </datalist>
                  </div>
                  <div className="md:col-span-2">
                    <button disabled={moveLoading} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors flex justify-center items-center gap-2 shadow-md disabled:opacity-60">
