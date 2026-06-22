@@ -50,6 +50,7 @@ from app.schemas.document import (
     AuditLogOut,
     DocumentOut,
     DocumentSummary,
+    DocumentUpdateRequest,
     DocumentUpdateStatusRequest,
     PaginatedDocuments,
     SectionBrief,
@@ -429,6 +430,39 @@ async def update_document_status(
     return {
         "status": "success",
         "data":   {"id": str(doc.id), "title": doc.title, "status": doc.status.value},
+    }
+
+
+# =============================================================================
+# PATCH /documents/{id}  —  Update Document Metadata
+# =============================================================================
+
+@router.patch(
+    "/{doc_id}",
+    summary="[Admin] Update document metadata",
+    description="""
+Update the basic metadata (title, description, section_id) of a document.
+    """,
+)
+async def update_document_metadata(
+    doc_id:        uuid.UUID,
+    request:       Request,
+    body:          DocumentUpdateRequest,
+    token_payload: dict         = Depends(require_role("ADMIN")),
+    db:            AsyncSession = Depends(get_db),
+):
+    storage = get_storage_backend()
+    doc = await _svc(db).update(
+        doc_id=doc_id,
+        title=body.title,
+        description=body.description,
+        section_id=body.section_id,
+        actor_id=uuid.UUID(token_payload["sub"]),
+        ip=_ip(request),
+    )
+    return {
+        "status": "success",
+        "data":   _to_detail(doc, storage),
     }
 
 

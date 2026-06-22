@@ -237,6 +237,45 @@ class DocumentService:
         return docs, total
 
     # =========================================================================
+    # UPDATE DOCUMENT
+    # =========================================================================
+
+    async def update(
+        self,
+        doc_id:        uuid.UUID,
+        title:         Optional[str],
+        description:   Optional[str],
+        section_id:    Optional[uuid.UUID],
+        actor_id:      uuid.UUID,
+        ip:            str,
+    ) -> Document:
+        """Admin-only: update basic metadata for a document."""
+        doc = await self._get_or_404(doc_id)
+        
+        # Verify the section if we are changing it
+        if section_id and section_id != doc.section_id:
+            sec_check = await self.db.execute(select(Section).where(Section.id == section_id))
+            if not sec_check.scalar_one_or_none():
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Target section not found.")
+            doc.section_id = section_id
+            
+        if title is not None:
+            doc.title = title
+        if description is not None:
+            doc.description = description
+            
+        await self.db.flush()
+        
+        await self._audit(
+            actor_id=actor_id,
+            action=AuditActionEnum.UPDATE_DOCUMENT,
+            target_id=doc.id,
+            description=f"Updated document metadata: title={doc.title}",
+            ip=ip
+        )
+        return doc
+
+    # =========================================================================
     # UPLOAD — with auto-versioning
     # =========================================================================
 

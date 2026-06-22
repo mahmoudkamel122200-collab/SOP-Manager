@@ -85,6 +85,7 @@ class AuditActionEnum(str, enum.Enum):
     CREATE_ITEM      = "CREATE_ITEM"
     SEARCH_ITEM      = "SEARCH_ITEM"
     VIEW_HISTORY     = "VIEW_HISTORY"
+    UPDATE_DOCUMENT  = "UPDATE_DOCUMENT"
     GRANT_ACCESS     = "GRANT_ACCESS"
     REVOKE_ACCESS    = "REVOKE_ACCESS"
 

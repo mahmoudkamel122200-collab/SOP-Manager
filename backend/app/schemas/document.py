@@ -81,6 +81,17 @@ class DocumentSummary(BaseModel):
 
 
 # =============================================================================
+# UPDATE REQUEST
+# =============================================================================
+
+class DocumentUpdateRequest(BaseModel):
+    """Body for PATCH /documents/{id}."""
+    title: Optional[str] = Field(None, min_length=3, max_length=255)
+    description: Optional[str] = None
+    section_id: Optional[uuid.UUID] = None
+
+
+# =============================================================================
 # STATUS UPDATE REQUEST
 # =============================================================================
 

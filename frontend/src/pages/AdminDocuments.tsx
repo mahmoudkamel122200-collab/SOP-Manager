@@ -16,10 +16,41 @@ export const AdminDocuments: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Edit Modal
+  const [editDoc, setEditDoc] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSection, setEditSection] = useState('');
+  const [editing, setEditing] = useState(false);
+
   // Delete confirm modal
   const [confirmDoc, setConfirmDoc] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  const openEdit = (e: React.MouseEvent, doc: any) => {
+    e.stopPropagation();
+    setEditDoc(doc);
+    setEditTitle(doc.title);
+    setEditSection(doc.section_id || sections[0]?.id || '');
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDoc) return;
+    setEditing(true);
+    try {
+      await api.patch(`/documents/${editDoc.id}`, {
+        title: editTitle,
+        section_id: editSection
+      });
+      setEditDoc(null);
+      fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || err.message || 'Edit failed.');
+    } finally {
+      setEditing(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -29,16 +60,12 @@ export const AdminDocuments: React.FC = () => {
       setSections(secs);
       if (secs.length > 0) setUploadSection(secs[0].id);
 
-      const allDocs: any[] = [];
-      for (const s of secs) {
-        try {
-          const dRes = await api.get(`/documents/section/${s.id}`);
-          const docs = dRes.data?.data?.documents || [];
-          docs.forEach((d: any) => allDocs.push({ ...d, section_name: s.name }));
-        } catch (e) {}
-      }
-      setDocuments(allDocs);
-    } catch (e) {}
+      const dRes = await api.get('/documents?page_size=100');
+      const docs = dRes.data?.data?.documents || [];
+      setDocuments(docs);
+    } catch (e) {
+      console.error(e);
+    }
     setLoading(false);
   };
 
@@ -108,6 +135,56 @@ export const AdminDocuments: React.FC = () => {
           <Plus className="w-4 h-4" /> Upload
         </button>
       </header>
+
+      {/* ── Edit Modal ──────────────────────────────────────────────────────── */}
+      {editDoc && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h2 className="text-xl font-bold mb-6 text-slate-800">Edit Document</h2>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-slate-600">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-slate-600">Section</label>
+                <select
+                  required
+                  value={editSection}
+                  onChange={e => setEditSection(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500"
+                >
+                  {sections.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditDoc(null)}
+                  className="flex-1 py-2 rounded-xl border-2 border-slate-200 font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editing}
+                  className="flex-1 py-2 rounded-xl bg-pharmacy-600 text-white font-medium flex items-center justify-center gap-2"
+                >
+                  {editing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Upload Modal ──────────────────────────────────────────────────────── */}
       {showUpload && (
@@ -252,7 +329,15 @@ export const AdminDocuments: React.FC = () => {
                       {d.section_name}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={e => openEdit(e, d)}
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                      title="Edit document"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
                     <button
                       type="button"
                       onClick={e => openConfirm(e, d.id, d.title)}
