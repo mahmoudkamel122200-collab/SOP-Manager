@@ -145,10 +145,13 @@ export const Login: React.FC = () => {
         const newMeRes = await api.get('/auth/me');
         const newUserData = newMeRes.data?.data ?? newMeRes.data;
 
+        // Find the full section details from available_sections
+        const fullSection = newUserData.available_sections?.find((s: any) => s.id === selectedSection.id);
+        
         login(
           sectionToken,
           { id: newUserData.id, username: newUserData.username, role: newUserData.role },
-          { id: selectedSection.id, name: selectedSection.name }
+          { id: selectedSection.id, name: selectedSection.name, permission_level: fullSection?.permission_level || selectedSection.permission_level }
         );
         navigate('/employee/dashboard', { replace: true });
       } catch (secErr: any) {

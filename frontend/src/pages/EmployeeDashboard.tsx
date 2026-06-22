@@ -232,35 +232,37 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
 
           {/* Move */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                <ArrowRightLeft className="w-5 h-5" />
+          {(section?.permission_level === 'WRITE' || section?.permission_level === 'ADMIN' || user?.role === 'ADMIN') && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                  <ArrowRightLeft className="w-5 h-5" />
+                </div>
+                <h2 className="font-bold text-slate-800 text-lg">Move Item</h2>
               </div>
-              <h2 className="font-bold text-slate-800 text-lg">Move Item</h2>
+              <form onSubmit={handleMove} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm font-medium text-slate-600 mb-1">Item Code</label>
+                   <input type="text" value={moveItemCode} onChange={e => setMoveItemCode(e.target.value)} placeholder="BG-000123" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-slate-600 mb-1">New Location Code</label>
+                   <input type="text" value={moveLocationCode} onChange={e => setMoveLocationCode(e.target.value)} placeholder="A-R02-S01-P02" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required />
+                 </div>
+                 <div className="md:col-span-2">
+                   <button disabled={moveLoading} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors flex justify-center items-center gap-2 shadow-md disabled:opacity-60">
+                     {moveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />} Move Item
+                   </button>
+                 </div>
+              </form>
+              {moveMessage && (
+                 <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 text-sm font-medium ${moveMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                   {moveMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                   {moveMessage.text}
+                 </div>
+              )}
             </div>
-            <form onSubmit={handleMove} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-sm font-medium text-slate-600 mb-1">Item Code</label>
-                 <input type="text" value={moveItemCode} onChange={e => setMoveItemCode(e.target.value)} placeholder="BG-000123" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-600 mb-1">New Location Code</label>
-                 <input type="text" value={moveLocationCode} onChange={e => setMoveLocationCode(e.target.value)} placeholder="A-R02-S01-P02" className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-purple-500 uppercase font-mono bg-slate-50 focus:bg-white" required />
-               </div>
-               <div className="md:col-span-2">
-                 <button disabled={moveLoading} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors flex justify-center items-center gap-2 shadow-md disabled:opacity-60">
-                   {moveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />} Move Item
-                 </button>
-               </div>
-            </form>
-            {moveMessage && (
-               <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 text-sm font-medium ${moveMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                 {moveMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                 {moveMessage.text}
-               </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ export interface User {
 export interface Section {
   id: string;
   name: string;
+  permission_level?: string;
 }
 
 interface AuthContextType {
