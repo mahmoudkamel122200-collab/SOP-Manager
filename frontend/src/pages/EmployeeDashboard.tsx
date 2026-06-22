@@ -385,16 +385,16 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
               <h2 className="font-bold text-slate-800 text-lg">Warehouse Search</h2>
             </div>
-            <form onSubmit={handleSearch} className="flex gap-3">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
               <input 
                 type="text" 
                 placeholder="Item Code (e.g. BG-000123)"
                 value={itemCode}
                 onChange={e => setItemCode(e.target.value)}
-                className="flex-1 px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-pharmacy-500 outline-none uppercase font-mono bg-slate-50 focus:bg-white"
+                className="flex-1 px-4 py-3 sm:py-2 border-2 border-slate-200 rounded-xl focus:border-pharmacy-500 outline-none uppercase font-mono bg-slate-50 focus:bg-white"
                 required
               />
-              <button disabled={searchLoading} className="bg-pharmacy-600 hover:bg-pharmacy-700 text-white px-6 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-sm">
+              <button disabled={searchLoading} className="bg-pharmacy-600 hover:bg-pharmacy-700 text-white px-6 py-3 sm:py-2 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-sm">
                 {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Search
               </button>
             </form>

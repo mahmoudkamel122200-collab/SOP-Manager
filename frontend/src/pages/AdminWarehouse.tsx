@@ -195,27 +195,29 @@ export const AdminWarehouse: React.FC = () => {
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {loading ? <div className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-pharmacy-500" /></div> :
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
-              <tr>
-                <th className="px-6 py-4 uppercase">Item Code</th>
-                <th className="px-6 py-4 uppercase">Material</th>
-                <th className="px-6 py-4 uppercase">Quantity</th>
-                <th className="px-6 py-4 uppercase">Location</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filtered.map((i: any) => (
-                <tr key={i.id} className="hover:bg-slate-50/50">
-                  <td className="px-6 py-4"><span className="font-mono bg-pharmacy-50 text-pharmacy-700 px-2 py-1 rounded font-semibold text-xs border border-pharmacy-100 shadow-sm">{i.item_code}</span></td>
-                  <td className="px-6 py-4 font-medium text-slate-700">{i.material_name || '—'}</td>
-                  <td className="px-6 py-4"><span className="font-bold text-slate-800">{i.quantity}</span> <span className="text-slate-400 text-xs">{i.unit || 'units'}</span></td>
-                  <td className="px-6 py-4 flex items-center gap-2 text-slate-600 font-mono text-xs"><MapPin className="w-4 h-4 text-slate-400" /> {i.location?.location_code || '—'}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[600px]">
+              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+                <tr>
+                  <th className="px-6 py-4 uppercase whitespace-nowrap">Item Code</th>
+                  <th className="px-6 py-4 uppercase whitespace-nowrap">Material</th>
+                  <th className="px-6 py-4 uppercase whitespace-nowrap">Quantity</th>
+                  <th className="px-6 py-4 uppercase whitespace-nowrap">Location</th>
                 </tr>
-              ))}
-              {filtered.length === 0 && <tr><td colSpan={4} className="p-12 text-center text-slate-500">No items found matching your search.</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map((i: any) => (
+                  <tr key={i.id} className="hover:bg-slate-50/50">
+                    <td className="px-6 py-4 whitespace-nowrap"><span className="font-mono bg-pharmacy-50 text-pharmacy-700 px-2 py-1 rounded font-semibold text-xs border border-pharmacy-100 shadow-sm">{i.item_code}</span></td>
+                    <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">{i.material_name || '—'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><span className="font-bold text-slate-800">{i.quantity}</span> <span className="text-slate-400 text-xs">{i.unit || 'units'}</span></td>
+                    <td className="px-6 py-4 flex items-center gap-2 text-slate-600 font-mono text-xs whitespace-nowrap"><MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" /> {i.location?.location_code || '—'}</td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && <tr><td colSpan={4} className="p-12 text-center text-slate-500">No items found matching your search.</td></tr>}
+              </tbody>
+            </table>
+          </div>
         }
       </div>
 
