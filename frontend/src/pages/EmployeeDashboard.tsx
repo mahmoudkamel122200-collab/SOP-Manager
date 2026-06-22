@@ -84,6 +84,100 @@ const SearchableSelect = ({ value, onChange, options, placeholder, label }: any)
   );
 };
 
+const MultiSearchableSelect = ({ values, onChange, options, placeholder, label }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const unselectedOptions = options.filter((o: any) => !values.includes(o.value));
+  
+  const filtered = unselectedOptions.filter((o: any) => 
+    o.label.toLowerCase().includes(search.toLowerCase()) || 
+    o.value.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const removeValue = (val: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(values.filter((v: string) => v !== val));
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="block text-sm font-medium text-slate-600 mb-1">{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl bg-slate-50 hover:bg-white flex flex-wrap gap-2 items-center cursor-pointer hover:border-purple-500 transition-colors min-h-[44px]"
+      >
+        {values.length === 0 ? (
+          <span className="text-slate-400">{placeholder}</span>
+        ) : (
+          values.map((v: string) => (
+            <span key={v} className="bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-mono font-medium flex items-center gap-1">
+              {v}
+              <XCircle className="w-3 h-3 hover:text-red-500 cursor-pointer" onClick={(e) => removeValue(v, e)} />
+            </span>
+          ))
+        )}
+        <svg className={`w-4 h-4 text-slate-400 transition-transform ml-auto ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+      </div>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -5 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+          >
+            <div className="p-2 border-b border-slate-100 bg-slate-50">
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 text-sm font-mono"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                autoFocus
+                onClick={e => e.stopPropagation()}
+              />
+            </div>
+            <div className="max-h-56 overflow-y-auto custom-scrollbar">
+              {filtered.length === 0 ? (
+                <div className="p-4 text-sm text-slate-500 text-center">No results found</div>
+              ) : (
+                filtered.map((o: any) => (
+                  <div 
+                    key={o.value} 
+                    onClick={(e) => { 
+                      e.stopPropagation();
+                      onChange([...values, o.value]); 
+                      setSearch(''); 
+                    }}
+                    className="px-4 py-2.5 hover:bg-purple-50 cursor-pointer text-sm font-mono text-slate-700 flex flex-col border-b border-slate-50 last:border-0"
+                  >
+                    <span className="font-semibold text-slate-800">{o.value}</span>
+                    {o.subLabel && <span className="text-xs text-slate-500 font-sans mt-0.5">{o.subLabel}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const EmployeeDashboard: React.FC = () => {
   const { user, section } = useAuth();
 
@@ -98,7 +192,7 @@ export const EmployeeDashboard: React.FC = () => {
   const [searchError, setSearchError] = useState('');
 
   // --- Move Item ---
-  const [moveItemCode, setMoveItemCode] = useState('');
+  const [moveItemCodes, setMoveItemCodes] = useState<string[]>([]);
   const [moveLocationCode, setMoveLocationCode] = useState('');
   const [moveLoading, setMoveLoading] = useState(false);
   const [moveMessage, setMoveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -142,36 +236,53 @@ export const EmployeeDashboard: React.FC = () => {
 
   const handleMove = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!moveItemCode.trim() || !moveLocationCode.trim()) return;
+    if (moveItemCodes.length === 0 || !moveLocationCode.trim()) return;
     setMoveLoading(true);
     setMoveMessage(null);
 
     try {
-      // Search item by code — the response includes the UUID directly.
-      const searchRes = await api.get(`/warehouse/items/${moveItemCode.trim().toUpperCase()}`);
-      const itemData = searchRes.data?.data;
-
-      const itemId = itemData?.id;
-      if (!itemId) {
-        throw new Error('Item not found or ID missing from response.');
-      }
-
-      // Also we need location_id, but the user inputs location_code. We need to fetch locations.
-      const locRes = await api.get('/warehouse/locations');
+      // Find the location first
+      const locRes = await api.get('/warehouse/locations?page_size=1000');
       const foundLoc = (locRes.data?.data || []).find((l: any) => l.location_code === moveLocationCode.trim().toUpperCase());
       
       if (!foundLoc) {
          throw new Error(`Location ${moveLocationCode} not found.`);
       }
 
-      await api.post(`/warehouse/items/${itemId}/move`, {
-        new_location_id: foundLoc.id,
-        notes: 'Employee move'
-      });
+      const moved: string[] = [];
+      const failed: string[] = [];
 
-      setMoveMessage({ type: 'success', text: `Moved ${itemData.item_code} to ${foundLoc.location_code}` });
-      setMoveItemCode('');
+      for (const code of moveItemCodes) {
+         try {
+           const searchRes = await api.get(`/warehouse/items/${code.trim().toUpperCase()}`);
+           const itemData = searchRes.data?.data;
+           if (!itemData?.id) throw new Error('Not found');
+
+           await api.post(`/warehouse/items/${itemData.id}/move`, {
+             new_location_id: foundLoc.id,
+             notes: 'Employee mass move'
+           });
+           moved.push(code);
+         } catch(e) {
+           failed.push(code);
+         }
+      }
+
+      if (failed.length === 0) {
+        setMoveMessage({ type: 'success', text: `Moved ${moved.length} items to ${foundLoc.location_code}` });
+      } else if (moved.length === 0) {
+        setMoveMessage({ type: 'error', text: `Failed to move all items.` });
+      } else {
+        setMoveMessage({ type: 'success', text: `Moved ${moved.length} items. Failed: ${failed.join(', ')}` });
+      }
+      
+      setMoveItemCodes([]);
       setMoveLocationCode('');
+      
+      // Refresh items list
+      if (section?.permission_level === 'WRITE' || section?.permission_level === 'ADMIN' || user?.role === 'ADMIN') {
+        api.get('/warehouse/items?page_size=1000').then(res => setAllItems(res.data?.data || []));
+      }
     } catch (err: any) {
       setMoveMessage({ type: 'error', text: err.response?.data?.detail || err.message || 'Move failed.' });
     } finally {
@@ -329,11 +440,11 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
               <form onSubmit={handleMove} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div className="relative">
-                   <SearchableSelect 
-                     label="Item Code"
-                     placeholder="Select or search item..."
-                     value={moveItemCode}
-                     onChange={setMoveItemCode}
+                   <MultiSearchableSelect 
+                     label="Item Codes"
+                     placeholder="Search and select items..."
+                     values={moveItemCodes}
+                     onChange={setMoveItemCodes}
                      options={allItems.map(item => ({
                        value: item.item_code,
                        label: item.item_code,
