@@ -41,7 +41,7 @@ class Section(Base):
         "UserSection", back_populates="section", cascade="all, delete-orphan"
     )
     documents: Mapped[list["Document"]] = relationship(  # type: ignore[name-defined]
-        "Document", back_populates="section"
+        "Document", secondary="document_sections", back_populates="sections"
     )
 
     __table_args__ = (

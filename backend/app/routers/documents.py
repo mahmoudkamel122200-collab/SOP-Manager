@@ -85,8 +85,7 @@ def _to_summary(doc, storage=None) -> dict:
         title=doc.title,
         version_number=doc.version_number,
         version_label=doc.version_label,
-        section_id=doc.section_id,
-        section_name=doc.section.name if doc.section else None,
+        sections=[SectionBrief(id=s.id, name=s.name) for s in doc.sections],
         status=doc.status,
         uploader_name=doc.uploader.full_name or doc.uploader.username if doc.uploader else None,
         file_name=doc.file_name,
@@ -103,7 +102,7 @@ def _to_detail(doc, storage) -> dict:
         description=doc.description,
         version_number=doc.version_number,
         version_label=doc.version_label,
-        section=SectionBrief(id=doc.section.id, name=doc.section.name) if doc.section else None,
+        sections=[SectionBrief(id=s.id, name=s.name) for s in doc.sections],
         uploaded_by=doc.uploaded_by,
         uploader=UploaderBrief(
             id=doc.uploader.id,
@@ -256,7 +255,7 @@ specify the version — the server computes it.
 )
 async def upload_document(
     request:       Request,
-    section_id:    uuid.UUID    = Form(..., description="UUID of the target section"),
+    section_ids:   str          = Form(..., description="Comma-separated UUIDs of the target sections"),
     title:         str          = Form(..., min_length=3, max_length=255, description="Document title"),
     description:   str | None   = Form(None, description="Optional description or summary"),
     version_label: str | None   = Form(None, max_length=50, description="Optional human label, e.g. 'Rev. A'"),
@@ -267,8 +266,18 @@ async def upload_document(
     storage = get_storage_backend()
     svc     = DocumentService(db, storage)
 
+    # Parse section_ids
+    parsed_section_ids = []
+    for sid in section_ids.split(','):
+        sid = sid.strip()
+        if sid:
+            parsed_section_ids.append(uuid.UUID(sid))
+
+    if not parsed_section_ids:
+        raise HTTPException(status_code=400, detail="At least one section must be provided")
+
     doc = await svc.upload(
-        section_id=section_id,
+        section_ids=parsed_section_ids,
         title=title,
         description=description,
         version_label=version_label,
@@ -441,7 +450,7 @@ async def update_document_status(
     "/{doc_id}",
     summary="[Admin] Update document metadata",
     description="""
-Update the basic metadata (title, description, section_id) of a document.
+Update the basic metadata (title, description, section_ids) of a document.
     """,
 )
 async def update_document_metadata(
@@ -456,7 +465,7 @@ async def update_document_metadata(
         doc_id=doc_id,
         title=body.title,
         description=body.description,
-        section_id=body.section_id,
+        section_ids=body.section_ids,
         actor_id=uuid.UUID(token_payload["sub"]),
         ip=_ip(request),
     )

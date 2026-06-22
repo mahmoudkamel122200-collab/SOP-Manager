@@ -79,7 +79,7 @@ class DocumentService:
             select(Document)
             .where(Document.id == doc_id, Document.is_deleted == False)  # noqa: E712
             .options(
-                selectinload(Document.section),
+                selectinload(Document.sections),
                 selectinload(Document.uploader),
             )
         )
@@ -112,18 +112,17 @@ class DocumentService:
                 detail="You do not have access to this section.",
             )
 
-    async def _next_version_number(self, title: str, section_id: uuid.UUID) -> int:
+    async def _next_version_number(self, title: str) -> int:
         """
         Return the next auto-incremented version number for a document.
 
         Logic:
-          1. Find max(version_number) for docs with the same title in the same section.
+          1. Find max(version_number) for docs with the same title globally.
           2. Return max + 1, or 1 if no previous versions exist.
         """
         result = await self.db.execute(
             select(func.max(Document.version_number)).where(
                 Document.title      == title,
-                Document.section_id == section_id,
                 Document.is_deleted == False,  # noqa: E712
             )
         )
@@ -157,10 +156,10 @@ class DocumentService:
         q = (
             select(Document)
             .where(
-                Document.section_id == section_id,
+                Document.sections.any(Section.id == section_id),
                 Document.is_deleted == False,  # noqa: E712
             )
-            .options(selectinload(Document.section), selectinload(Document.uploader))
+            .options(selectinload(Document.sections), selectinload(Document.uploader))
         )
 
         # Status filter
@@ -208,11 +207,11 @@ class DocumentService:
         q = (
             select(Document)
             .where(Document.is_deleted == False)  # noqa: E712
-            .options(selectinload(Document.section), selectinload(Document.uploader))
+            .options(selectinload(Document.sections), selectinload(Document.uploader))
         )
 
         if section_id:
-            q = q.where(Document.section_id == section_id)
+            q = q.where(Document.sections.any(Section.id == section_id))
         if status_filter:
             q = q.where(Document.status == status_filter)
         if search:
@@ -229,7 +228,7 @@ class DocumentService:
         )).scalar_one()
 
         docs = (await self.db.execute(
-            q.order_by(Document.section_id, Document.title, Document.version_number.desc())
+            q.order_by(Document.title, Document.version_number.desc())
              .offset((page - 1) * page_size)
              .limit(page_size)
         )).scalars().all()
@@ -245,19 +244,20 @@ class DocumentService:
         doc_id:        uuid.UUID,
         title:         Optional[str],
         description:   Optional[str],
-        section_id:    Optional[uuid.UUID],
+        section_ids:   Optional[list[uuid.UUID]],
         actor_id:      uuid.UUID,
         ip:            str,
     ) -> Document:
         """Admin-only: update basic metadata for a document."""
-        doc = await self._get_or_404(doc_id)
+        doc = await self._get_document_or_404(doc_id)
         
-        # Verify the section if we are changing it
-        if section_id and section_id != doc.section_id:
-            sec_check = await self.db.execute(select(Section).where(Section.id == section_id))
-            if not sec_check.scalar_one_or_none():
-                raise HTTPException(status.HTTP_404_NOT_FOUND, "Target section not found.")
-            doc.section_id = section_id
+        # Verify the sections if we are changing them
+        if section_ids is not None:
+            sec_check = await self.db.execute(select(Section).where(Section.id.in_(section_ids)))
+            target_sections = sec_check.scalars().all()
+            if len(target_sections) != len(set(section_ids)):
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "One or more target sections not found.")
+            doc.sections = target_sections
             
         if title is not None:
             doc.title = title
@@ -282,7 +282,7 @@ class DocumentService:
     async def upload(
         self,
         *,
-        section_id:    uuid.UUID,
+        section_ids:   list[uuid.UUID],
         title:         str,
         description:   Optional[str],
         version_label: Optional[str],
@@ -305,28 +305,30 @@ class DocumentService:
           production/machine_safety_sop_v1_1750424400.pdf
           production/machine_safety_sop_v2_1750511000.pdf  ← new upload
         """
-        # ── 1. Validate section ────────────────────────────────────────────
-        section = await self._get_section_or_404(section_id)
+        # ── 1. Validate sections ───────────────────────────────────────────
+        sec_check = await self.db.execute(select(Section).where(Section.id.in_(section_ids)))
+        target_sections = sec_check.scalars().all()
+        if len(target_sections) != len(set(section_ids)):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "One or more target sections not found.")
 
         # ── 2. Validate file ───────────────────────────────────────────────
         ext, mime = validate_upload_file(file)
         content   = await read_and_validate_content(file)
 
         # ── 3. Auto-assign version ─────────────────────────────────────────
-        version_number = await self._next_version_number(title, section_id)
+        version_number = await self._next_version_number(title)
 
         # ── 4. Persist file to storage backend ────────────────────────────
         relative_path, stored_filename = await self.storage.save(
             content=content,
             title=title,
             version_number=version_number,
-            section_name=section.name,
+            section_name="shared" if len(target_sections) > 1 else target_sections[0].name,
             extension=ext,
         )
 
         # ── 5. Create DB record ────────────────────────────────────────────
         doc = Document(
-            section_id=section_id,
             title=title,
             description=description,
             version_number=version_number,
@@ -337,6 +339,7 @@ class DocumentService:
             mime_type=mime,
             uploaded_by=uploader_id,
             status=DocumentStatusEnum.DRAFT,
+            sections=target_sections,
         )
         self.db.add(doc)
         await self.db.flush()    # materialise doc.id
@@ -350,12 +353,12 @@ class DocumentService:
             target_id=doc.id,
             description=(
                 f"Uploaded '{title}' v{version_number} "
-                f"({len(content) // 1024} KB) → section '{section.name}'"
+                f"({len(content) // 1024} KB) → {len(target_sections)} sections"
             ),
             ip_address=ip,
         )
 
-        await self.db.refresh(doc, ["section", "uploader"])
+        await self.db.refresh(doc, ["sections", "uploader"])
         return doc
 
     # =========================================================================
@@ -377,7 +380,18 @@ class DocumentService:
         doc = await self._get_document_or_404(doc_id)
 
         # ── Permission check ───────────────────────────────────────────────
-        await self._verify_section_access(user_id, doc.section_id, role)
+        if role != "ADMIN":
+            doc_section_ids = [s.id for s in doc.sections]
+            has_access = False
+            for sec_id in doc_section_ids:
+                try:
+                    await self._verify_section_access(user_id, sec_id, role)
+                    has_access = True
+                    break
+                except HTTPException:
+                    pass
+            if not has_access:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have access to this document.")
 
         # ── Audit ──────────────────────────────────────────────────────────
         await log_event(
@@ -408,7 +422,18 @@ class DocumentService:
         No additional OPEN_DOCUMENT log is written (the download IS the open).
         """
         doc = await self._get_document_or_404(doc_id)
-        await self._verify_section_access(user_id, doc.section_id, role)
+        if role != "ADMIN":
+            doc_section_ids = [s.id for s in doc.sections]
+            has_access = False
+            for sec_id in doc_section_ids:
+                try:
+                    await self._verify_section_access(user_id, sec_id, role)
+                    has_access = True
+                    break
+                except HTTPException:
+                    pass
+            if not has_access:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have access to this document.")
 
         try:
             path_or_url = self.storage.resolve(doc.file_path)
@@ -446,22 +471,32 @@ class DocumentService:
     ) -> list[Document]:
         """
         Return all versions (newest first) of the document identified by doc_id.
-        Uses the doc's title + section_id to find the version family.
+        Uses the doc's title to find the version family.
         """
         doc = await self._get_document_or_404(doc_id)
-        await self._verify_section_access(user_id, doc.section_id, role)
+        if role != "ADMIN":
+            doc_section_ids = [s.id for s in doc.sections]
+            has_access = False
+            for sec_id in doc_section_ids:
+                try:
+                    await self._verify_section_access(user_id, sec_id, role)
+                    has_access = True
+                    break
+                except HTTPException:
+                    pass
+            if not has_access:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have access to this document.")
 
         result = await self.db.execute(
             select(Document)
             .where(
                 Document.title      == doc.title,
-                Document.section_id == doc.section_id,
                 Document.is_deleted == False,  # noqa: E712
             )
-            .options(selectinload(Document.uploader))
+            .options(selectinload(Document.sections), selectinload(Document.uploader))
             .order_by(Document.version_number.desc())
         )
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     # =========================================================================
     # STATUS TRANSITION

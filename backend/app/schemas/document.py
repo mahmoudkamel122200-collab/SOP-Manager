@@ -45,7 +45,7 @@ class DocumentOut(BaseModel):
     description:      Optional[str]
     version_number:   int
     version_label:    Optional[str]
-    section:          SectionBrief
+    sections:         list[SectionBrief]
     uploaded_by:      uuid.UUID
     uploader:         Optional[UploaderBrief]
     status:           DocumentStatusEnum
@@ -69,8 +69,7 @@ class DocumentSummary(BaseModel):
     title:           str
     version_number:  int
     version_label:   Optional[str]
-    section_id:      uuid.UUID
-    section_name:    Optional[str]
+    sections:        list[SectionBrief] = Field(default_factory=list)
     status:          DocumentStatusEnum
     uploader_name:   Optional[str]
     file_name:       str
@@ -88,7 +87,7 @@ class DocumentUpdateRequest(BaseModel):
     """Body for PATCH /documents/{id}."""
     title: Optional[str] = Field(None, min_length=3, max_length=255)
     description: Optional[str] = None
-    section_id: Optional[uuid.UUID] = None
+    section_ids: Optional[list[uuid.UUID]] = None
 
 
 # =============================================================================
@@ -137,5 +136,5 @@ class PaginatedDocuments(BaseModel):
 class VersionHistoryResponse(BaseModel):
     """All versions of a document."""
     title:        str
-    section_name: str
+    sections:     list[SectionBrief]
     versions:     list[DocumentSummary]

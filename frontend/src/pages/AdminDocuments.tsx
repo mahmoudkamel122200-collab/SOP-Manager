@@ -11,7 +11,7 @@ export const AdminDocuments: React.FC = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDesc, setUploadDesc] = useState('');
-  const [uploadSection, setUploadSection] = useState('');
+  const [uploadSections, setUploadSections] = useState<string[]>([]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -19,7 +19,7 @@ export const AdminDocuments: React.FC = () => {
   // Edit Modal
   const [editDoc, setEditDoc] = useState<any | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [editSection, setEditSection] = useState('');
+  const [editSections, setEditSections] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
 
   // Delete confirm modal
@@ -31,7 +31,7 @@ export const AdminDocuments: React.FC = () => {
     e.stopPropagation();
     setEditDoc(doc);
     setEditTitle(doc.title);
-    setEditSection(doc.section_id || sections[0]?.id || '');
+    setEditSections(doc.sections?.map((s: any) => s.id) || (sections[0] ? [sections[0].id] : []));
   };
 
   const handleEdit = async (e: React.FormEvent) => {
@@ -41,7 +41,7 @@ export const AdminDocuments: React.FC = () => {
     try {
       await api.patch(`/documents/${editDoc.id}`, {
         title: editTitle,
-        section_id: editSection
+        section_ids: editSections
       });
       setEditDoc(null);
       fetchData();
@@ -58,7 +58,7 @@ export const AdminDocuments: React.FC = () => {
       const secRes = await api.get('/sections');
       const secs = secRes.data?.data || [];
       setSections(secs);
-      if (secs.length > 0) setUploadSection(secs[0].id);
+      if (secs.length > 0) setUploadSections([secs[0].id]);
 
       const dRes = await api.get('/documents?page_size=100');
       const docs = dRes.data?.data?.documents || [];
@@ -80,7 +80,7 @@ export const AdminDocuments: React.FC = () => {
     const fd = new FormData();
     fd.append('title', uploadTitle);
     fd.append('description', uploadDesc);
-    fd.append('section_id', uploadSection);
+    fd.append('section_ids', uploadSections.join(','));
     fd.append('file', uploadFile);
 
     try {
@@ -153,17 +153,26 @@ export const AdminDocuments: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1 text-slate-600">Section</label>
-                <select
-                  required
-                  value={editSection}
-                  onChange={e => setEditSection(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500"
-                >
+                <label className="block text-sm font-semibold mb-1 text-slate-600">Sections</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto p-2 border-2 border-slate-200 rounded-xl">
                   {sections.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editSections.includes(s.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditSections([...editSections, s.id]);
+                          } else {
+                            setEditSections(editSections.filter(id => id !== s.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-pharmacy-600 rounded border-slate-300 focus:ring-pharmacy-500"
+                      />
+                      <span className="text-sm text-slate-700">{s.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
@@ -212,17 +221,26 @@ export const AdminDocuments: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1 text-slate-600">Section</label>
-                <select
-                  required
-                  value={uploadSection}
-                  onChange={e => setUploadSection(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500"
-                >
+                <label className="block text-sm font-semibold mb-1 text-slate-600">Sections</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto p-2 border-2 border-slate-200 rounded-xl">
                   {sections.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={uploadSections.includes(s.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setUploadSections([...uploadSections, s.id]);
+                          } else {
+                            setUploadSections(uploadSections.filter(id => id !== s.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-pharmacy-600 rounded border-slate-300 focus:ring-pharmacy-500"
+                      />
+                      <span className="text-sm text-slate-700">{s.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1 text-slate-600">File</label>
@@ -325,9 +343,13 @@ export const AdminDocuments: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="bg-teal-50 text-teal-700 px-2 py-1 rounded font-semibold text-xs">
-                      {d.section_name}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {d.sections?.map((sec: any) => (
+                        <span key={sec.id} className="bg-teal-50 text-teal-700 px-2 py-1 rounded font-semibold text-xs">
+                          {sec.name}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
                     <button

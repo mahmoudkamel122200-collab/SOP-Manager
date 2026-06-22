@@ -45,6 +45,21 @@ class DocumentStatusEnum(str, enum.Enum):
     REJECTED     = "REJECTED"
 
 
+class DocumentSection(Base):
+    __tablename__ = "document_sections"
+    
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    section_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sections.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+
+
 class Document(Base):
     """
     SOP document metadata record.
@@ -54,7 +69,7 @@ class Document(Base):
 
     Versioning:
       - `version_number` is an integer (1, 2, 3...) auto-assigned at upload.
-      - Documents with the same (title, section_id) form a version family.
+      - Documents with the same title form a version family.
       - The service always queries max(version_number) for the "latest".
 
     Soft delete:
@@ -68,13 +83,6 @@ class Document(Base):
     # ── Identity ──────────────────────────────────────────────────────────────
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-
-    # ── Section ownership ─────────────────────────────────────────────────────
-    section_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("sections.id", onupdate="CASCADE", ondelete="CASCADE"),
-        nullable=False,
     )
 
     # ── Document identity ─────────────────────────────────────────────────────
@@ -129,8 +137,8 @@ class Document(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    section: Mapped["Section"] = relationship(  # type: ignore[name-defined]
-        "Section", back_populates="documents"
+    sections: Mapped[list["Section"]] = relationship(  # type: ignore[name-defined]
+        "Section", secondary="document_sections", back_populates="documents"
     )
     uploader: Mapped["User"] = relationship(  # type: ignore[name-defined]
         "User",
@@ -144,21 +152,15 @@ class Document(Base):
 
     # ── Constraints & indexes ─────────────────────────────────────────────────
     __table_args__ = (
-        # Each (title, section, version) must be unique
+        # Each (title, version) must be unique
         UniqueConstraint(
-            "title", "section_id", "version_number",
-            name="uq_documents_title_section_version",
+            "title", "version_number",
+            name="uq_documents_title_version",
         ),
-        Index("idx_documents_section_id",   "section_id"),
         Index("idx_documents_uploaded_by",  "uploaded_by"),
         Index("idx_documents_status",       "status"),
         Index("idx_documents_is_deleted",   "is_deleted"),
         Index("idx_documents_created_at",   "created_at"),
-        # Composite: most common query pattern
-        Index(
-            "idx_documents_section_deleted_status",
-            "section_id", "is_deleted", "status",
-        ),
         CheckConstraint("TRIM(title) <> ''",     name="chk_documents_title_not_empty"),
         CheckConstraint("TRIM(file_path) <> ''", name="chk_documents_filepath_not_empty"),
         CheckConstraint("version_number >= 1",   name="chk_documents_version_positive"),
