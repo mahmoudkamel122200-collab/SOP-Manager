@@ -179,6 +179,24 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
+  const [confirmDelete, setConfirmDelete] = useState<UserOut | null>(null);
+  const [deletingUser, setDeletingUser] = useState(false);
+
+  const handleDeleteUser = async () => {
+    if (!confirmDelete) return;
+    setDeletingUser(true);
+    try {
+      await api.delete(`/users/${confirmDelete.id}`);
+      showToast('success', `User ${confirmDelete.username} deleted.`);
+      setConfirmDelete(null);
+      loadData();
+    } catch (e: any) {
+      showToast('error', e.response?.data?.detail || 'Failed to delete user.');
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Toast */}
@@ -447,14 +465,63 @@ export const AdminUsers: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                onClick={() => openAssignModal(user)}
-                className="w-full py-2.5 rounded-xl border-2 border-slate-100 text-slate-700 font-medium hover:border-pharmacy-500 hover:text-pharmacy-600 hover:bg-pharmacy-50 transition-all flex items-center justify-center gap-2"
-              >
-                <Building className="w-4 h-4" /> Manage Access
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => openAssignModal(user)}
+                  className="flex-1 py-2.5 rounded-xl border-2 border-slate-100 text-slate-700 font-medium hover:border-pharmacy-500 hover:text-pharmacy-600 hover:bg-pharmacy-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Building className="w-4 h-4" /> Manage Access
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(user)}
+                  className="p-2.5 rounded-xl border-2 border-slate-100 text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center"
+                  title="Delete User"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 rounded-xl">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">Delete User</h2>
+                <p className="text-sm text-slate-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-slate-700 mb-2">Are you sure you want to delete user:</p>
+            <p className="font-semibold text-slate-800 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg mb-6 truncate">
+              {confirmDelete.username}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deletingUser}
+                className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={deletingUser}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+              >
+                {deletingUser ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {deletingUser ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
