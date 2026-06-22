@@ -362,21 +362,25 @@ class DocumentService:
         user_id: uuid.UUID,
         role:    str,
         ip:      Optional[str] = None,
-    ) -> tuple[Path, str, str]:
+    ) -> tuple[Path | str, str, str]:
         """
-        Return (absolute_path, filename, mime_type) for the document.
+        Return (absolute_path_or_url, filename, mime_type) for the document.
         Permission is checked the same way as `get()`.
         No additional OPEN_DOCUMENT log is written (the download IS the open).
         """
         doc = await self._get_document_or_404(doc_id)
         await self._verify_section_access(user_id, doc.section_id, role)
 
-        abs_path = self.storage.resolve(doc.file_path)
-        if not abs_path.exists():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="File not found on storage. Contact your administrator.",
-            )
+        try:
+            path_or_url = self.storage.resolve(doc.file_path)
+            if isinstance(path_or_url, Path) and not path_or_url.exists():
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="File not found on storage. Contact your administrator.",
+                )
+        except NotImplementedError:
+            # Backend does not support local paths (e.g. Supabase)
+            path_or_url = self.storage.public_url(doc.file_path)
 
         await log_event(
             self.db,
@@ -389,7 +393,7 @@ class DocumentService:
         )
 
         mime = doc.mime_type or "application/octet-stream"
-        return abs_path, doc.file_name, mime
+        return path_or_url, doc.file_name, mime
 
     # =========================================================================
     # VERSION HISTORY — all versions of a title in a section

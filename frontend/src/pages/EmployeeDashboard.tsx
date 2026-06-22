@@ -126,10 +126,13 @@ export const EmployeeDashboard: React.FC = () => {
                       <button 
                         onClick={async () => {
                           try {
-                            const res = await api.get(`/documents/${doc.id}/download`, { responseType: 'blob' });
-                            const contentType = (res.headers['content-type'] as string) || 'application/pdf';
-                            const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
-                            window.open(url, '_blank');
+                            const res = await api.get(`/documents/${doc.id}`);
+                            const downloadUrl = res.data?.data?.download_url;
+                            if (downloadUrl) {
+                              window.open(downloadUrl, '_blank');
+                            } else {
+                              throw new Error('No download URL');
+                            }
                           } catch(e) {
                             alert('Failed to open document');
                           }
@@ -141,9 +144,15 @@ export const EmployeeDashboard: React.FC = () => {
                       <button 
                         onClick={async () => {
                           try {
-                            const res = await api.get(`/documents/${doc.id}/download`, { responseType: 'blob' });
-                            const contentType = (res.headers['content-type'] as string) || 'application/pdf';
-                            const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
+                            const res = await api.get(`/documents/${doc.id}`);
+                            const downloadUrl = res.data?.data?.download_url;
+                            if (!downloadUrl) throw new Error('No download URL');
+
+                            // Fetch the file directly without Auth header to avoid CORS issues
+                            const fileRes = await fetch(downloadUrl);
+                            const blob = await fileRes.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            
                             const iframe = document.createElement('iframe');
                             iframe.style.display = 'none';
                             iframe.src = url;

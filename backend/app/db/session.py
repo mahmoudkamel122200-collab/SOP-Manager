@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
+from sqlalchemy.pool import NullPool
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DB_ECHO,
-    pool_pre_ping=True,        # validate connections before checkout
-    pool_size=10,
-    max_overflow=20,
+    poolclass=NullPool,
     connect_args={"prepared_statement_cache_size": 0}, # Required for PgBouncer / Supabase Pooler
 )
 

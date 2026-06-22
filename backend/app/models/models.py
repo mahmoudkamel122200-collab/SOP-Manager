@@ -81,6 +81,10 @@ class AuditActionEnum(str, enum.Enum):
     MOVE_ITEM        = "MOVE_ITEM"
     ADD_ITEM         = "ADD_ITEM"
     REMOVE_ITEM      = "REMOVE_ITEM"
+    CREATE_LOCATION  = "CREATE_LOCATION"
+    CREATE_ITEM      = "CREATE_ITEM"
+    SEARCH_ITEM      = "SEARCH_ITEM"
+    VIEW_HISTORY     = "VIEW_HISTORY"
     GRANT_ACCESS     = "GRANT_ACCESS"
     REVOKE_ACCESS    = "REVOKE_ACCESS"
 
@@ -262,7 +266,7 @@ class Document(Base):
     )
     section_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("sections.id", onupdate="CASCADE", ondelete="RESTRICT"),
+        ForeignKey("sections.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)

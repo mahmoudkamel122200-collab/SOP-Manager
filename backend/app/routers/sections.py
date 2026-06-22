@@ -43,7 +43,6 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 @router.get("")
 async def list_sections(
-    token_payload: dict = Depends(get_current_token),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Section).order_by(Section.name))

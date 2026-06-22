@@ -73,7 +73,7 @@ class Document(Base):
     # ── Section ownership ─────────────────────────────────────────────────────
     section_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("sections.id", onupdate="CASCADE", ondelete="RESTRICT"),
+        ForeignKey("sections.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
 

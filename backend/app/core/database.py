@@ -9,14 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
+from sqlalchemy.pool import NullPool
+
 # ── Engine ────────────────────────────────────────────────────────────────────
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DB_ECHO,
-    pool_pre_ping=True,     # test connection before each checkout
-    pool_size=10,
-    max_overflow=20,
-    pool_timeout=30,
+    poolclass=NullPool,
 )
 
 # ── Session Factory ───────────────────────────────────────────────────────────

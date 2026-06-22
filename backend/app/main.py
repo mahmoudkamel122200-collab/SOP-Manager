@@ -25,9 +25,11 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup tasks (e.g., warm connection pool, cache init)
+    # Startup tasks
     yield
-    # Shutdown tasks (e.g., flush logs, close connections)
+    # Shutdown tasks: close DB connections cleanly to avoid Supabase connection limit exhaustion
+    from app.core.database import engine
+    await engine.dispose()
 
 
 # ── App ───────────────────────────────────────────────────────────────────────

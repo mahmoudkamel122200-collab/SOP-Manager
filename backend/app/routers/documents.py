@@ -38,7 +38,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -338,14 +338,18 @@ async def download_document(
     db:            AsyncSession = Depends(get_db),
 ):
     storage = get_storage_backend()
-    abs_path, filename, mime = await DocumentService(db, storage).resolve_for_download(
+    path_or_url, filename, mime = await DocumentService(db, storage).resolve_for_download(
         doc_id=doc_id,
         user_id=uuid.UUID(token_payload["sub"]),
         role=token_payload.get("role", ""),
         ip=_ip(request),
     )
+    
+    if isinstance(path_or_url, str) and (path_or_url.startswith("http://") or path_or_url.startswith("https://")):
+        return RedirectResponse(path_or_url)
+        
     return FileResponse(
-        path=str(abs_path),
+        path=str(path_or_url),
         media_type=mime,
         filename=filename,
         headers={"Content-Disposition": f'inline; filename="{filename}"'},

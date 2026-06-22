@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,12 +23,7 @@ interface SectionItem {
   permission_level?: string;
 }
 
-const FALLBACK_SECTIONS: SectionItem[] = [
-  { id: '00000000-0000-0000-0002-000000000001', name: 'Production' },
-  { id: '00000000-0000-0000-0002-000000000002', name: 'Labs' },
-  { id: '00000000-0000-0000-0002-000000000003', name: 'Warehouse' },
-  { id: '00000000-0000-0000-0002-000000000004', name: 'Quality' },
-];
+
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 const slide = {
@@ -62,6 +57,25 @@ export const Login: React.FC = () => {
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [sections, setSections] = useState<SectionItem[]>([]);
+  const [loadingSections, setLoadingSections] = useState(false);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      setLoadingSections(true);
+      try {
+        const res = await api.get('/sections');
+        const data = res.data?.data ?? res.data;
+        setSections(data);
+      } catch (err) {
+        console.error('Failed to fetch sections:', err);
+      } finally {
+        setLoadingSections(false);
+      }
+    };
+    fetchSections();
+  }, []);
 
   // ── Step 1: Role click ─────────────────────────────────────────────────────
   const handleRoleClick = (r: 'ADMIN' | 'EMPLOYEE') => {
@@ -260,18 +274,29 @@ export const Login: React.FC = () => {
                   Choose the section you are working in today
                 </p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {FALLBACK_SECTIONS.map((sec) => (
-                    <button
-                      key={sec.id}
-                      id={`section-${sec.name.toLowerCase()}-btn`}
-                      onClick={() => handleSectionSelect(sec)}
-                      className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all duration-200 text-center ${sectionColor(sec.name)}`}
-                    >
-                      {sec.name}
-                    </button>
-                  ))}
-                </div>
+                {loadingSections ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="w-8 h-8 text-pharmacy-500 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {sections.map((sec) => (
+                      <button
+                        key={sec.id}
+                        id={`section-${sec.name.toLowerCase()}-btn`}
+                        onClick={() => handleSectionSelect(sec)}
+                        className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all duration-200 text-center ${sectionColor(sec.name)}`}
+                      >
+                        {sec.name}
+                      </button>
+                    ))}
+                    {sections.length === 0 && (
+                      <div className="col-span-2 text-center py-4 text-sm text-slate-500">
+                        No sections available.
+                      </div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
 
