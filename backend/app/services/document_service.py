@@ -266,12 +266,14 @@ class DocumentService:
             
         await self.db.flush()
         
-        await self._audit(
-            actor_id=actor_id,
+        await log_event(
+            self.db,
             action=AuditActionEnum.UPDATE_DOCUMENT,
+            module=AuditModuleEnum.SOP,
+            user_id=actor_id,
             target_id=doc.id,
             description=f"Updated document metadata: title={doc.title}",
-            ip=ip
+            ip_address=ip
         )
         return doc
 
