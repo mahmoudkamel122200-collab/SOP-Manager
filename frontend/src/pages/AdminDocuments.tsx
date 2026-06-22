@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Trash2, Loader2, Plus } from 'lucide-react';
+import { FileText, Trash2, Loader2, Plus, X, UploadCloud } from 'lucide-react';
 import api from '../services/api';
 
 export const AdminDocuments: React.FC = () => {
@@ -14,6 +14,7 @@ export const AdminDocuments: React.FC = () => {
   const [uploadSections, setUploadSections] = useState<string[]>([]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Edit Modal
@@ -154,25 +155,32 @@ export const AdminDocuments: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1 text-slate-600">Sections</label>
-                <div className="space-y-2 max-h-40 overflow-y-auto p-2 border-2 border-slate-200 rounded-xl">
-                  {sections.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editSections.includes(s.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setEditSections([...editSections, s.id]);
-                          } else {
-                            setEditSections(editSections.filter(id => id !== s.id));
-                          }
-                        }}
-                        className="w-4 h-4 text-pharmacy-600 rounded border-slate-300 focus:ring-pharmacy-500"
-                      />
-                      <span className="text-sm text-slate-700">{s.name}</span>
-                    </label>
-                  ))}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {editSections.map(id => {
+                    const sec = sections.find(s => s.id === id);
+                    if (!sec) return null;
+                    return (
+                      <div key={id} className="bg-pharmacy-100 text-pharmacy-700 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                        {sec.name}
+                        <button type="button" onClick={() => setEditSections(editSections.filter(i => i !== id))} className="text-pharmacy-500 hover:text-pharmacy-800"><X className="w-3 h-3" /></button>
+                      </div>
+                    );
+                  })}
                 </div>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !editSections.includes(e.target.value)) {
+                      setEditSections([...editSections, e.target.value]);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500"
+                >
+                  <option value="">Add a section...</option>
+                  {sections.filter(s => !editSections.includes(s.id)).map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
@@ -222,35 +230,63 @@ export const AdminDocuments: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1 text-slate-600">Sections</label>
-                <div className="space-y-2 max-h-40 overflow-y-auto p-2 border-2 border-slate-200 rounded-xl">
-                  {sections.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={uploadSections.includes(s.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setUploadSections([...uploadSections, s.id]);
-                          } else {
-                            setUploadSections(uploadSections.filter(id => id !== s.id));
-                          }
-                        }}
-                        className="w-4 h-4 text-pharmacy-600 rounded border-slate-300 focus:ring-pharmacy-500"
-                      />
-                      <span className="text-sm text-slate-700">{s.name}</span>
-                    </label>
-                  ))}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {uploadSections.map(id => {
+                    const sec = sections.find(s => s.id === id);
+                    if (!sec) return null;
+                    return (
+                      <div key={id} className="bg-pharmacy-100 text-pharmacy-700 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                        {sec.name}
+                        <button type="button" onClick={() => setUploadSections(uploadSections.filter(i => i !== id))} className="text-pharmacy-500 hover:text-pharmacy-800"><X className="w-3 h-3" /></button>
+                      </div>
+                    );
+                  })}
                 </div>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !uploadSections.includes(e.target.value)) {
+                      setUploadSections([...uploadSections, e.target.value]);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-pharmacy-500"
+                >
+                  <option value="">Add a section...</option>
+                  {sections.filter(s => !uploadSections.includes(s.id)).map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1 text-slate-600">File</label>
-                <input
-                  type="file"
-                  required
-                  ref={fileRef}
-                  onChange={e => setUploadFile(e.target.files?.[0] || null)}
-                  className="w-full"
-                />
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      setUploadFile(e.dataTransfer.files[0]);
+                    }
+                  }}
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                    isDragOver ? 'border-pharmacy-500 bg-pharmacy-50' : 'border-slate-300 hover:bg-slate-50'
+                  }`}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  {uploadFile ? (
+                    <p className="text-sm font-medium text-pharmacy-600">{uploadFile.name}</p>
+                  ) : (
+                    <p className="text-sm text-slate-500">Drag & drop a file here, or click to select</p>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileRef}
+                    className="hidden"
+                    onChange={e => setUploadFile(e.target.files?.[0] || null)}
+                  />
+                </div>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
